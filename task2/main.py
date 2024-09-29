@@ -19,6 +19,17 @@ TEST_STRING = """
 """
 
 
+class GraphNode:
+    """Структура репрезентации одной вершины графа"""
+    def __str__(self) -> str:
+        return str(f"{self.children}, {self.parent}, {self.relations}")
+
+    def __init__(self, children: tp.List[int], parent: tp.Optional[str]) -> None:
+        self.children: tp.List[int] = children
+        self.parent: tp.Optional[str] = parent
+        self.relations: tp.List[tp.Optional[int]] = [0] * 5
+
+
 def get_object_from_json_string(object_string: str) -> tp.Dict[str, tp.Any]:
     """Разбор json-строки в словарь"""
     return json.loads(object_string)
@@ -26,7 +37,7 @@ def get_object_from_json_string(object_string: str) -> tp.Dict[str, tp.Any]:
 
 def recursive_graph_parse(
     graph: tp.Dict[str, tp.Dict],  # Ветка от текущей вершины графа
-    graph_repr: tp.Dict[str, tp.Dict],  # Общий словарь репрезентации графа
+    graph_repr: tp.Dict[str, GraphNode],  # Общий словарь репрезентации графа
     parent: tp.Optional[str]=None  # Родитель текущей вершины
 ) -> None:
     """Рекурсивное разложение графа на импровизированную матрицу смежности - для каждой вершины набор детей и родитель"""
@@ -39,16 +50,41 @@ def recursive_graph_parse(
             # Записываем детей текущего ребенка
             children = list(val.keys())
         # Текущего ребенка в итоговую репрезентацию графа
-        graph_repr[key] = [children, parent]
+        graph_repr[key] = GraphNode(children, parent)
+        # Отношение непосредственного управления
+        graph_repr[key].relations[0] = len(children)
+        # Отношение непосредственного подчинения
+        graph_repr[key].relations[1] = 1 if graph_repr[key].parent is not None else 0
+
+
+def relations_parse(graph_repr: tp.Dict[str, GraphNode]) -> None:
+    for key, val in graph_repr.items():
+        if graph_repr[key].parent is not None:
+            parent = graph_repr[key].parent
+            # Отношение соподчинения на одном уровне
+            graph_repr[key].relations[4] += len(graph_repr[parent].children) - 1
+            # Отношение опосредованного подчинения
+            if graph_repr[parent].parent is not None:
+                graph_repr[key].relations[3] += 1
+        for child in val.children:
+            graph_child = graph_repr[str(child)]
+            # Отношение опосредованного управления
+            graph_repr[key].relations[2] += graph_child.relations[2] + len(graph_child.children)
+            # Отношение опосредованного подчинения
+            graph_child.relations[3] += graph_repr[key].relations[3]
 
 
 def main() -> None:
     source_graph = get_object_from_json_string(TEST_STRING)
     graph_repr ={}
     recursive_graph_parse(source_graph, graph_repr)
+    # Вероятно не совсем оптимально, но работает же :)
+    relations_parse(graph_repr)
     # Сортировка полученной репрезенации по возрастанию номеров вершин
     sorted_repr = {key: val for key, val in sorted(graph_repr.items(), key=lambda x: x[0])}
-    print(sorted_repr)
+    # Транспонированная матрица заданных отношений r1-r5
+    for key, value in sorted_repr.items():
+        print(f"{key}: {value.relations}")
 
 
 if __name__ == "__main__":

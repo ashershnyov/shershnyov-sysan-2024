@@ -1,4 +1,5 @@
 import json
+import math
 import typing as tp
 
 TEST_STRING = """
@@ -28,6 +29,20 @@ class GraphNode:
         self.children: tp.List[int] = children
         self.parent: tp.Optional[str] = parent
         self.relations: tp.List[tp.Optional[int]] = [0] * 5
+
+
+def calc_enthropy(matrix: tp.List[tp.List[int]]) -> float:
+    """Рассчитывает энтропию входящей матрицы"""
+    if len(matrix) == 0:
+        return 0.0
+    hj = [0.0] * len(matrix[0])
+    for row in matrix:
+        for i, val in enumerate(row):
+            if val == 0:
+                continue
+            p = val / (len(row) - 1)
+            hj[i] -= (p * math.log2(p))
+    return sum(hj)
 
 
 def get_object_from_json_string(object_string: str) -> tp.Dict[str, tp.Any]:
@@ -85,6 +100,7 @@ def main(input_string: str) -> None:
     # Транспонированная матрица заданных отношений r1-r5
     for key, value in sorted_repr.items():
         print(f"{key}: {value.relations}")
+    print(calc_enthropy([val.relations for val in sorted_repr.values()]))
 
 
 if __name__ == "__main__":

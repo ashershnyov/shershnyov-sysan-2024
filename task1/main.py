@@ -42,8 +42,8 @@ def recursive_graph_parse(
         graph_repr[key] = [children, parent]
 
 
-def main() -> None:
-    source_graph = get_object_from_json_string(TEST_STRING)
+def main(input_string: str) -> None:
+    source_graph = get_object_from_json_string(input_string)
     graph_repr ={}
     recursive_graph_parse(source_graph, graph_repr)
     # Сортировка полученной репрезенации по возрастанию номеров вершин
@@ -52,4 +52,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(TEST_STRING)
